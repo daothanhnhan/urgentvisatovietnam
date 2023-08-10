@@ -1,0 +1,29 @@
+@echo off
+REM This script enables WinRM on a Windows Server machine and adds a firewall rule to allow access to WinRM from a specific IP address.
+
+REM Set the IP address that is allowed to access WinRM
+set ALLOWED_IP=172.16.1.12
+
+REM Check if the script is running with administrative privileges
+net session >nul 2>&1
+if %errorLevel% neq 0 (    
+    echo This script must be run as an administrator.    
+    pause    
+    exit /b 1
+)
+
+REM Enable WinRM
+winrm quickconfig -q
+winrm set winrm/config/service/auth @{Basic="true"}
+winrm set winrm/config/service @{AllowUnencrypted="true"}
+winrm set winrm/config/winrs @{MaxMemoryPerShellMB="1024"}
+
+REM Create a firewall rule to allow access to WinRM from the specified IP address
+netsh advfirewall firewall add rule name="WinRM (TCP-In)" dir=in protocol=TCP localport=5985 action=allow remoteip=%ALLOWED_IP%
+
+REM Restart the WinRM service
+net stop winrm
+net start winrm
+
+echo WinRM has been enabled successfully and a firewall rule has been added to allow access from %ALLOWED_IP%.
+pause
